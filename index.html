@@ -1,0 +1,77 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MWEWE | Company Work Hub</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f5f8f6;color:#18352c}
+header{background:#123b30;color:white;padding:22px 8%;display:flex;justify-content:space-between;align-items:center}
+.brand{font-size:22px;font-weight:bold;letter-spacing:2px}
+.brand small{display:block;font-size:10px;letter-spacing:1px;margin-top:5px}
+nav a{color:white;text-decoration:none;margin-left:22px}
+.hero{padding:85px 8%;background:linear-gradient(120deg,#123b30,#168b68);color:white}
+.hero h1{font-size:44px;max-width:650px;margin:0 0 18px}
+.hero p{font-size:18px;line-height:1.7;max-width:600px}
+.btn{background:#20a77b;color:white;border:0;padding:13px 23px;border-radius:7px;cursor:pointer;font-weight:bold}
+.btn.light{background:white;color:#14513d}
+section{padding:55px 8%}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+.card{background:white;padding:25px;border-radius:12px;box-shadow:0 4px 18px #123b3010}
+footer{background:#123b30;color:white;text-align:center;padding:25px}
+#login{display:none;position:fixed;inset:0;background:#0009;align-items:center;justify-content:center;padding:20px}
+.loginbox{background:white;padding:30px;border-radius:12px;width:100%;max-width:400px}
+input{width:100%;padding:13px;margin:9px 0 17px;border:1px solid #ccd8d1;border-radius:6px}
+#message{font-size:14px;color:#b33}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand">MWEWE<small>CLEANING & FUMIGATION SERVICES LTD</small></div>
+ <nav><a href="#home">Home</a><a href="#services">About</a><a href="#" onclick="showLogin()">Staff Login</a></nav>
+</header>
+
+<div class="hero" id="home">
+ <h1>Welcome to MWEWE Company Work Hub</h1>
+ <p>A central workspace for managing projects, tracking progress and keeping our team connected.</p>
+ <button class="btn light" onclick="showLogin()">Employee / Management Login</button>
+</div>
+
+<section id="services">
+ <h2>One team. One workspace.</h2>
+ <div class="cards">
+  <div class="card"><h3>Project Management</h3><p>Organise work and monitor project progress.</p></div>
+  <div class="card"><h3>Team Collaboration</h3><p>Keep employee work organised in one place.</p></div>
+  <div class="card"><h3>Reports & Updates</h3><p>Make project updates easier to review.</p></div>
+ </div>
+</section>
+
+<footer>
+ MWEWE CLEANING AND FUMIGATION SERVICES LTD<br>
+ Company Work Hub
+</footer>
+
+<div id="login">
+ <div class="loginbox">
+  <h2>Staff Login</h2>
+  <p>Sign in to your secure company workspace.</p>
+  <form id="loginForm">
+   <label>Email address</label>
+   <input id="email" type="email" required placeholder="Your company email">
+   <label>Password</label>
+   <input id="password" type="password" required placeholder="Your password">
+   <button class="btn" type="submit">Sign in</button>
+   <button class="btn" type="button" onclick="hideLogin()" style="background:#66756e;margin-left:8px">Close</button>
+  </form>
+  <p id="message"></p>
+ </div>
+</div>
+
+<script>
+function showLogin(){document.getElementById('login').style.display='flex'}
+function hideLogin(){document.getElementById('login').style.display='none'}
+</script>
+</body>
+</html>
