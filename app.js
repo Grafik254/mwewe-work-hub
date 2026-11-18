@@ -100,6 +100,7 @@ async function showDashboard(user) {
 
   if (isAdmin) {
     await loadEmployees();
+
     document.getElementById("projectForm").addEventListener(
       "submit",
       createProject
@@ -192,11 +193,37 @@ async function loadProjects() {
   }
 
   const cards = await Promise.all(projects.map(async project => {
-    const { data: updates, error: updateError } = await db
-      .from("project_updates")
-      .select("id, update_text, created_at")
-      .eq("project_id", project.id)
-      .order("created_at", { ascending: false });
+    const [updatesResult, filesResult] = await Promise.all([
+      db
+        .from("project_updates")
+        .select("id, update_text, created_at")
+        .eq("project_id", project.id)
+        .order("created_at", { ascending: false }),
+
+      db
+        .from("project_files")
+        .select("id, path, file_name, created_at")
+        .eq("project_id", project.id)
+        .order("created_at", { ascending: false })
+    ]);
+
+    const updates = updatesResult.data || [];
+    const updateError = updatesResult.error;
+
+    const files = filesResult.data || [];
+    const fileError = filesResult.error;
+
+    const filesWithLinks = await Promise.all(files.map(async file => {
+      const { data: signedData, error: signedError } = await db.storage
+        .from("project-files")
+        .createSignedUrl(file.path, 3600);
+
+      return {
+        ...file,
+        signedUrl: signedData?.signedUrl,
+        signedError
+      };
+    }));
 
     return `
       <div class="card" style="margin:15px 0">
@@ -205,6 +232,7 @@ async function loadProjects() {
         <p><strong>Status:</strong> ${escapeText(project.status || "Not set")}</p>
 
         <hr>
+
         <h4>Progress Updates</h4>
 
         ${updateError
@@ -227,6 +255,44 @@ async function loadProjects() {
           <button class="btn" type="submit">Post Update</button>
           <p class="updateMessage"></p>
         </form>
+
+        <hr>
+
+        <h4>Project Photos & Documents</h4>
+
+        ${fileError
+          ? `<p>Could not load files: ${escapeText(fileError.message)}</p>`
+          : filesWithLinks.length
+            ? filesWithLinks.map(file => `
+                <div style="background:#f5f8f6;padding:12px;border-radius:8px;margin:10px 0">
+                  <p>
+                    <strong>${escapeText(file.file_name)}</strong>
+                  </p>
+                  ${file.signedUrl
+                    ? `<a href="${escapeText(file.signedUrl)}" target="_blank" rel="noopener noreferrer">Open or view file</a>`
+                    : `<small>Could not open file: ${escapeText(file.signedError?.message || "Unknown error")}</small>`
+                  }
+                  <br>
+                  <small>${escapeText(new Date(file.created_at).toLocaleString())}</small>
+                </div>
+              `).join("")
+            : "<p>No files uploaded yet.</p>"
+        }
+
+        <form class="fileForm"
+          data-project-id="${escapeText(project.id)}"
+          data-owner-id="${escapeText(project.owner_id)}">
+
+          <label>Choose photos or documents</label>
+          <input class="fileInput" type="file" multiple required
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt">
+
+          <button class="btn" type="submit" style="margin-top:10px">
+            Upload Files
+          </button>
+
+          <p class="fileMessage"></p>
+        </form>
       </div>
     `;
   }));
@@ -235,6 +301,10 @@ async function loadProjects() {
 
   document.querySelectorAll(".updateForm").forEach(updateForm => {
     updateForm.addEventListener("submit", postUpdate);
+  });
+
+  document.querySelectorAll(".fileForm").forEach(fileForm => {
+    fileForm.addEventListener("submit", uploadProjectFiles);
   });
 }
 
@@ -264,9 +334,63 @@ async function postUpdate(event) {
   await loadProjects();
 }
 
+async function uploadProjectFiles(event) {
+  event.preventDefault();
+
+  const uploadForm = event.currentTarget;
+  const projectId = uploadForm.dataset.projectId;
+  const ownerId = uploadForm.dataset.ownerId;
+  const input = uploadForm.querySelector(".fileInput");
+  const status = uploadForm.querySelector(".fileMessage");
+  const files = Array.from(input.files || []);
+
+  if (!files.length) {
+    status.textContent = "Please select at least one file.";
+    return;
+  }
+
+  status.textContent = "Uploading files...";
+
+  for (const file of files) {
+    const safeName = file.name.replace(/[^\w.-]/g, "_");
+    const filePath = `${ownerId}/${projectId}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+
+    const { error: uploadError } = await db.storage
+      .from("project-files")
+      .upload(filePath, file, {
+        contentType: file.type || "application/octet-stream",
+        upsert: false
+      });
+
+    if (uploadError) {
+      status.textContent = "Upload failed: " + uploadError.message;
+      return;
+    }
+
+    const { error: recordError } = await db
+      .from("project_files")
+      .insert([{
+        project_id: projectId,
+        owner_id: ownerId,
+        path: filePath,
+        file_name: file.name
+      }]);
+
+    if (recordError) {
+      await db.storage.from("project-files").remove([filePath]);
+      status.textContent = "File uploaded but its record could not be saved: " + recordError.message;
+      return;
+    }
+  }
+
+  status.textContent = "Files uploaded successfully!";
+  await loadProjects();
+}
+
 function escapeText(value) {
   const element = document.createElement("div");
   element.textContent = String(value ?? "");
   return element.innerHTML;
 }
+
 
