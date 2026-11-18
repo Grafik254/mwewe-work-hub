@@ -1,7 +1,7 @@
 
 const SUPABASE_URL = "https://hnbzmfzeyxdbnfpvmcxr.supabase.co";
 const SUPABASE_KEY = "sb_publishable_yoLbDoXhXcetwuUa1kfOGA_zKIcsESt";
-
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
 
 const form = document.getElementById("loginForm");
