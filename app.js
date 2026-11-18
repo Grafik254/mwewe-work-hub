@@ -3,6 +3,7 @@ const SUPABASE_URL = "https://hnbzmfzeyxdbnfpvmcxr.supabase.co";
 const SUPABASE_KEY = "sb_publishable_yoLbDoXhXcetwuUa1kfOGA_zKIcsESt";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
+let currentRole = null;
 
 const form = document.getElementById("loginForm");
 const message = document.getElementById("message");
@@ -42,7 +43,7 @@ async function showDashboard(user) {
   }
 
   const isAdmin = profile.role === "admin";
-
+currentRole = profile.role;
   document.body.innerHTML = `
     <header>
       <div class="brand">
